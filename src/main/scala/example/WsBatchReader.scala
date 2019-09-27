@@ -11,7 +11,8 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.v2.DataSourceOptions
 import org.apache.spark.sql.sources.v2.reader.{InputPartition, InputPartitionReader}
 import org.apache.spark.sql.sources.v2.reader.streaming.{MicroBatchReader, Offset}
-import org.apache.spark.sql.types.{BinaryType, LongType, StructField, StructType}
+import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
+import org.apache.spark.unsafe.types.UTF8String
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
@@ -55,7 +56,7 @@ class WsBatchReader(options: DataSourceOptions) extends MicroBatchReader with Ws
     eventList = eventList.getAtOffset(end.json().toLong)
   }
 
-  override def readSchema(): StructType = StructType(StructField("value", BinaryType) :: StructField("offset", LongType) :: Nil)
+  override def readSchema(): StructType = StructType(StructField("value", StringType) :: StructField("offset", LongType) :: Nil)
 
   override def planInputPartitions(): util.List[InputPartition[InternalRow]] = {
 
@@ -71,7 +72,7 @@ class WsBatchReader(options: DataSourceOptions) extends MicroBatchReader with Ws
     val slices = Array.fill(numPartitions)(new ListBuffer[(WsMessage, Long)])
     events.foreach { case (event, offset) =>
       val hash = math.abs(event.key.hashCode)
-      slices( hash % numPartitions).append(event -> offset)
+      slices(hash % numPartitions).append(event -> offset)
     }
 
     (0 until numPartitions).map { i =>
@@ -87,7 +88,9 @@ class WsBatchReader(options: DataSourceOptions) extends MicroBatchReader with Ws
             }
 
             override def get(): InternalRow = {
-              InternalRow(slice(currentIdx)._1.toJson.getBytes, slice(currentIdx)._2)
+              val value = UTF8String.fromString(slice(currentIdx)._1.toJson)
+              val offset = slice(currentIdx)._2
+              InternalRow(value, offset)
             }
 
             override def close(): Unit = {}

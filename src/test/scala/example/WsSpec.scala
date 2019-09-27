@@ -58,7 +58,7 @@ class WsSpec(val config: Config) extends TestKit(ActorSystem("Test", config)) wi
 
       Thread.sleep(10000)
 
-      session.sql("select * from messages").show()
+      session.sql("select * from messages").show(10, truncate = false)
       stream.stop()
     }
   }
