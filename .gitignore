@@ -1,0 +1,20 @@
+# SBT Ignore
+project/target
+project/project/target
+target
+
+# IntelliJ Stuff
+.idea
+*.iml
+
+# VIM Swap file
+*.swp
+
+# Log files
+*.log
+
+# Apple OSX Stuff
+.DS_Store
+
+# Spark
+spark-warehouse
